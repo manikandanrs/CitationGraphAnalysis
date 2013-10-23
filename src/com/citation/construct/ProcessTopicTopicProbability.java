@@ -15,14 +15,17 @@ public class ProcessTopicTopicProbability {
 		double probability = 0.0;
 
 		// Take every node in the graph.
-		// Check if the node's topic probability for topic 1 is > 0. This implies the node is in the topic plane of topic 1. 
-		// 		Get all the citation edges for node.
-		//		For every node involved in the citation,
-		//			Check if the cited node's topic probability for topic 2 is > 0. This implies that the cited node is in the topic plane of topic 2.
-		// 			Get all the edges from the citing node and cited node.
-		//			For each edge
-		//				get the topic probability of the cited topic and add that to overall probability.
-		
+		// Check if the node's topic probability for topic 1 is > 0. This
+		// implies the node is in the topic plane of topic 1.
+		// Get all the citation edges for node.
+		// For every node involved in the citation,
+		// Check if the cited node's topic probability for topic 2 is > 0. This
+		// implies that the cited node is in the topic plane of topic 2.
+		// Get all the edges from the citing node and cited node.
+		// For each edge
+		// get the topic probability of the cited topic and add that to overall
+		// probability.
+
 		// For each edge sum the probability.
 
 		Map<String, Node> nodeList = graph.getNodeList();
@@ -37,7 +40,8 @@ public class ProcessTopicTopicProbability {
 
 			// checking if the node is present in topic plane
 
-			if (n.getTopicProbability().get(topic1) > 0) {
+			if ((n.getTopicProbability().get(topic1) != null)
+					&& (n.getTopicProbability().get(topic1) > 0)) {
 
 				if (n.getCitationEdgesMap() == null)
 					continue;
@@ -48,7 +52,8 @@ public class ProcessTopicTopicProbability {
 
 				for (Node citedNode : citedNodesList) {
 
-					if (citedNode.getTopicProbability().get(topic2) <= 0) {
+					if ((citedNode.getTopicProbability().get(topic2) == null)
+							|| (citedNode.getTopicProbability().get(topic2) <= 0)) {
 						continue;
 					}
 
@@ -59,9 +64,12 @@ public class ProcessTopicTopicProbability {
 						continue;
 
 					for (Edge e : citationEdgesForNode) {
-						double impact = 0;
+						double impact = calculateCitationImpact(graph, topic1,
+								citedNode.getPaperId());
+						// What if citation is not contributing to topic 2
 						probability = probability
-								+ e.getCitationTopicProbability().get(topic2);
+								+ e.getCitationTopicProbability().get(topic1)
+								* impact;
 					}
 				}
 
@@ -69,6 +77,13 @@ public class ProcessTopicTopicProbability {
 		}
 
 		return probability;
+
+	}
+
+	private double calculateCitationImpact(Graph graph, String topicId,
+			String paperId) {
+
+		return graph.getPageRankImportance().getProbability(topicId, paperId);
 
 	}
 }

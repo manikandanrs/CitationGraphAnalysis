@@ -33,7 +33,7 @@ public class ProcessPaperTopicProbability {
 
 				// checking if the node is present in topic plane
 
-				if (n.getTopicProbability().get(topicId) > 0) {
+				if ((n.getTopicProbability().get(topicId) !=null ) && (n.getTopicProbability().get(topicId) > 0)) {
 
 					if(n.getCitationEdgesMap() == null) continue;
 					
@@ -53,10 +53,15 @@ public class ProcessPaperTopicProbability {
 						for (String topic : topicProbability) {
 							if (topic.equals(topicId)) {
 								probability = probability
-										+ citationTopicProbability.get(topic);
+										+ citationTopicProbability.get(topicId);
 							} else {
+								
+								// A bit unclear. Clarify with professor.
+								
+								
 								// Calculate impact.
-								double impact = 0;
+								
+								double impact = calculateCitationImpact(graph,topicId,paperId);
 								probability = probability
 										+ citationTopicProbability.get(topic)
 										* impact;
@@ -71,4 +76,11 @@ public class ProcessPaperTopicProbability {
 		return probability;
 
 	}
+	
+	private double calculateCitationImpact(Graph graph,String topicId, String paperId){
+		
+		return graph.getPageRankImportance().getProbability(topicId, paperId);
+		
+	}
+	
 }

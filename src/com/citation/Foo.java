@@ -1,161 +1,111 @@
 package com.citation;
 
+import java.io.FileInputStream;
+import java.io.FileWriter;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.Properties;
 
 import com.citation.construct.ProcessPaperTopicProbability;
 import com.citation.construct.ProcessTopicTopicProbability;
-import com.citation.datastructures.CitationImportance;
-import com.citation.datastructures.Edge;
-import com.citation.datastructures.Graph;
-import com.citation.datastructures.Node;
-import com.citation.datastructures.PageRankImportance;
-import com.citation.datastructures.TopicImportance;
 import com.citation.util.FileParser;
 
 public class Foo {
 
-	public static void displayGraph(Graph graph) {
+	private static String paperTopicOutputFileName = "paper_topic_"
+			+ System.currentTimeMillis();
 
-		try {
-
-			Map<String, Node> nodeList = graph.getNodeList();
-			Set<String> nodeNames = nodeList.keySet();
-
-			System.out.println("Node List ......");
-
-			for (String name : nodeNames) {
-
-				Node n = nodeList.get(name);
-
-				System.out.println("Paper ID : " + n.getPaperId());
-
-				Map<String, Double> topicProbability = n.getTopicProbability();
-
-				Set<String> topics = topicProbability.keySet();
-
-				for (String topic : topics) {
-					System.out.println(topic + " --> "
-							+ topicProbability.get(topic));
-				}
-
-				Map<Node, List<Edge>> edgeCitationsMap = n
-						.getCitationEdgesMap();
-
-				if (edgeCitationsMap != null) {
-					Set<Node> citedPapers = edgeCitationsMap.keySet();
-
-					for (Node cited : citedPapers) {
-
-						List<Edge> edgeList = edgeCitationsMap.get(cited);
-
-						for (Edge e : edgeList) {
-
-							System.out.println(e.getCitingPaper().getPaperId()
-									+ " --> " + e.getCitedPaper().getPaperId());
-
-							Map<String, Double> probability = e
-									.getCitationTopicProbability();
-							Set<String> edgeTopics = probability.keySet();
-							for (String topic : edgeTopics) {
-								System.out.println(topic + " --> "
-										+ probability.get(topic));
-							}
-						}
-					}
-				}
-
-				System.out
-						.println("---------------------------------------------");
-
-			}
-
-			System.out.println("Nodes Contributing To each Topic ....");
-
-			Map<String, List<Node>> nodeContributingToTopic = graph
-					.getTopicContributingNodesMap();
-
-			Set<String> topicNodeMap = nodeContributingToTopic.keySet();
-
-			for (String topic : topicNodeMap) {
-				System.out.println("Topic : " + topic);
-
-				List<Node> nodes = nodeContributingToTopic.get(topic);
-
-				for (Node n : nodes) {
-					System.out.println(n.getPaperId());
-				}
-				System.out.println("-------------------------------");
-			}
-
-			System.out.println("Topic Importance Records Size : "
-					+ nodeList.size());
-
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
+	private static String topicTopicOutputFileName = "topic_topic_"
+			+ System.currentTimeMillis();
 
 	public static void main(String[] args) throws Exception {
 
 		ProcessPaperTopicProbability paperTopicProbability = new ProcessPaperTopicProbability();
 		ProcessTopicTopicProbability topicTopicProbability = new ProcessTopicTopicProbability();
+		FileWriter paperTopicWriter = new FileWriter(paperTopicOutputFileName);
+		FileWriter topicTopicWriter = new FileWriter(topicTopicOutputFileName);
 
-		FileParser.parseTopicalImportance(args[0]);
+		try {
 
-		FileParser.parseCitationImportance(args[1]);
+			Properties properties = new Properties();
 
-		FileParser.parsePageRankImportance(args[2]);
+			properties.load(new FileInputStream(args[0]));
 
-		List<String> topicList = FileParser.parseTopicFile("data/topics");
-		List<String> paperList = FileParser.parseTopicFile("data/papers");
+			FileParser.loadData(properties);
 
-		// displayGraph(FileParser.getGraph());
+			List<String> topicList = FileParser.parseTopicFile(properties
+					.getProperty("TOPICS_LIST"));
+			List<String> paperList = FileParser.parsePaperIdFile(properties
+					.getProperty("PAPER_LIST"));
 
-		if (paperList.size() > 0) {
-			// Paper topic matrix .
-			for (int iIndex = 0; iIndex < paperList.size(); iIndex++) {
+			if (paperList.size() > 0) {
+				// Paper topic matrix .
+
+				// write topics to file
+				paperTopicWriter.append(" ,");
 				for (int jIndex = 0; jIndex < topicList.size(); jIndex++) {
-					System.out.println(paperList.get(iIndex)
-							+ " -- "
-							+ topicList.get(jIndex)
-							+ " , "
-							+ paperTopicProbability.process(
-									FileParser.getGraph(),
-									paperList.get(iIndex),
-									topicList.get(jIndex)));
+					paperTopicWriter.append(topicList.get(jIndex));
+					paperTopicWriter.append(",");
 				}
+				paperTopicWriter.append("\n");
+
+				for (int iIndex = 0; iIndex < paperList.size(); iIndex++) {
+					paperTopicWriter.append(paperList.get(iIndex));
+					paperTopicWriter.append(",");
+					for (int jIndex = 0; jIndex < topicList.size(); jIndex++) {
+						Double probability = paperTopicProbability.process(
+								FileParser.getGraph(), paperList.get(iIndex),
+								topicList.get(jIndex));
+						System.out.println(paperList.get(iIndex) + " -- "
+								+ topicList.get(jIndex) + " , " + probability);
+						paperTopicWriter.append(String.valueOf(probability));
+						paperTopicWriter.append(",");
+					}
+					paperTopicWriter.append("\n");
+				}
+
 			}
 
-		}
+			// topic topic matrix
 
-		// topic topic matrix
-
-		for (int iIndex = 0; iIndex < topicList.size(); iIndex++) {
+			topicTopicWriter.append(" ,");
+			for (int iIndex = 0; iIndex < topicList.size(); iIndex++) {
+				topicTopicWriter.append(topicList.get(iIndex));
+				topicTopicWriter.append(",");
+			}
+			topicTopicWriter.append("\n");
 			for (int jIndex = 0; jIndex < topicList.size(); jIndex++) {
-				if (iIndex != jIndex) {
-					System.out.println(topicList.get(jIndex)
-							+ " -- "
-							+ topicList.get(iIndex)
-							+ " -->"
-							+ topicTopicProbability.process(
-									FileParser.getGraph(),
-									topicList.get(jIndex),
-									topicList.get(iIndex)));
-					// call to calculate the topic topic probability.
-					// save the results and project it in a html file.
+				topicTopicWriter.append(topicList.get(jIndex));
+				topicTopicWriter.append(",");
+				for (int iIndex = 0; iIndex < topicList.size(); iIndex++) {
+					double probability = 0.0;
+					if (iIndex != jIndex) {
+						probability = topicTopicProbability.process(
+								FileParser.getGraph(), topicList.get(jIndex),
+								topicList.get(iIndex));
+						System.out.println(topicList.get(jIndex) + " -- "
+								+ topicList.get(iIndex) + " -->" + probability);
+
+						// call to calculate the topic topic probability.
+						// save the results and project it in a html file.
+					}
+
+					topicTopicWriter.append(String.valueOf(probability));
+					topicTopicWriter.append(",");
 				}
+				topicTopicWriter.append("\n");
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			if (paperTopicWriter != null) {
+				paperTopicWriter.flush();
+				paperTopicWriter.close();
+			}
+			if (topicTopicWriter != null) {
+				topicTopicWriter.flush();
+				topicTopicWriter.close();
 			}
 		}
-
-		// System.out.println(paperTopicProbability.process(FileParser.getGraph(),
-		// "R_5673", "topic0"));
-
-		/*
-		 * System.out.println("---------"); displayCitationImportance(args[1]);
-		 * System.out.println("---------"); displayPageRankImportance(args[2]);
-		 */
 
 	}
 }

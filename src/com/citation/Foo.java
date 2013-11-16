@@ -3,26 +3,29 @@ package com.citation;
 import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
-import com.citation.construct.ProcessPaperTopicProbability;
-import com.citation.construct.ProcessTopicTopicProbability;
+import com.citation.construct.ProcessPaperTopicProbabilityFile;
+import com.citation.construct.ProcessTopicTopicProbabilityFile;
 import com.citation.util.FileParser;
 
 public class Foo {
 
 	private static String paperTopicOutputFileName = "paper_topic_"
-			+ System.currentTimeMillis();
+			+ System.currentTimeMillis() + ".csv";
 
 	private static String topicTopicOutputFileName = "topic_topic_"
-			+ System.currentTimeMillis();
+			+ System.currentTimeMillis() + ".csv";
 
 	public static void main(String[] args) throws Exception {
 
-		ProcessPaperTopicProbability paperTopicProbability = new ProcessPaperTopicProbability();
-		ProcessTopicTopicProbability topicTopicProbability = new ProcessTopicTopicProbability();
+		ProcessPaperTopicProbabilityFile paperTopicProbability = new ProcessPaperTopicProbabilityFile();
+		ProcessTopicTopicProbabilityFile topicTopicProbability = new ProcessTopicTopicProbabilityFile();
 		FileWriter paperTopicWriter = new FileWriter(paperTopicOutputFileName);
 		FileWriter topicTopicWriter = new FileWriter(topicTopicOutputFileName);
+		Map<String, String> topicIdNameMapping = null;
+		Map<String, List<String>> paperRelatedTopics = null;
 
 		try {
 
@@ -31,6 +34,10 @@ public class Foo {
 			properties.load(new FileInputStream(args[0]));
 
 			FileParser.loadData(properties);
+
+			topicIdNameMapping = FileParser.getTopicIdNameMap();
+
+			paperRelatedTopics = FileParser.getPaperRelatedTopics();
 
 			List<String> topicList = FileParser.parseTopicFile(properties
 					.getProperty("TOPICS_LIST"));
@@ -41,9 +48,10 @@ public class Foo {
 				// Paper topic matrix .
 
 				// write topics to file
-				paperTopicWriter.append(" ,");
+				paperTopicWriter.append("paper/topic,");
 				for (int jIndex = 0; jIndex < topicList.size(); jIndex++) {
-					paperTopicWriter.append(topicList.get(jIndex));
+					paperTopicWriter.append(topicIdNameMapping.get(topicList
+							.get(jIndex)));
 					paperTopicWriter.append(",");
 				}
 				paperTopicWriter.append("\n");
@@ -63,18 +71,34 @@ public class Foo {
 					paperTopicWriter.append("\n");
 				}
 
+				paperTopicWriter.append("\n\n\n");
+
+				for (int iIndex = 0; iIndex < paperList.size(); iIndex++) {
+					List<String> keywords = paperRelatedTopics.get(paperList
+							.get(iIndex));
+					paperTopicWriter.append(paperList.get(iIndex));
+					paperTopicWriter.append("-->");
+					for (String keyword : keywords) {
+						paperTopicWriter
+								.append(topicIdNameMapping.get(keyword));
+						paperTopicWriter.append(":");
+					}
+					paperTopicWriter.append("\n");
+				}
 			}
 
 			// topic topic matrix
 
 			topicTopicWriter.append(" ,");
 			for (int iIndex = 0; iIndex < topicList.size(); iIndex++) {
-				topicTopicWriter.append(topicList.get(iIndex));
+				topicTopicWriter.append(topicIdNameMapping.get(topicList
+						.get(iIndex)));
 				topicTopicWriter.append(",");
 			}
 			topicTopicWriter.append("\n");
 			for (int jIndex = 0; jIndex < topicList.size(); jIndex++) {
-				topicTopicWriter.append(topicList.get(jIndex));
+				topicTopicWriter.append(topicIdNameMapping.get(topicList
+						.get(jIndex)));
 				topicTopicWriter.append(",");
 				for (int iIndex = 0; iIndex < topicList.size(); iIndex++) {
 					double probability = 0.0;

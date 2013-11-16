@@ -26,9 +26,24 @@ public class FileParser {
 
 	/** Contains the ID of all the topics related to each paper ID. */
 	private static Map<String, List<String>> paperRelatedTopics = new HashMap<String, List<String>>();
+	
+	/** Map that maintains the name of the topic for each keyword.*/
+	private static Map<String,String> topicIdNameMap = new HashMap<String,String>();
 
 	public static Graph getGraph() {
 		return graph;
+	}
+
+	public static List<String> getTopicIds() {
+		return topicIds;
+	}
+
+	public static Map<String, List<String>> getPaperRelatedTopics() {
+		return paperRelatedTopics;
+	}
+
+	public static Map<String, String> getTopicIdNameMap() {
+		return topicIdNameMap;
 	}
 
 	/**
@@ -226,7 +241,10 @@ public class FileParser {
 
 			topicId = getTopicIdFromFileNameForPageRank(f.getName());
 
-			String input = null;
+			System.out.println("insert into page_rank_importance(paper_id,probability) select paper_id,probability from pg_"+topicId+";");
+			System.out.println("update page_rank_importance set topic_id="+topicId+" where topic_id=0;");
+			
+			/*String input = null;
 
 			try {
 				while ((input = br.readLine()) != null) {
@@ -238,7 +256,7 @@ public class FileParser {
 				}
 			} finally {
 				br.close();
-			}
+			}*/
 
 		}
 
@@ -332,6 +350,7 @@ public class FileParser {
 				String[] data = input.split("[,]");
 
 				topicIds.add(data[1]);
+				topicIdNameMap.put(data[1], data[0]);
 
 			}
 		} finally {
@@ -389,7 +408,7 @@ public class FileParser {
 
 	public static Graph loadData(Properties properties) throws Exception {
 
-		parseTopicId(properties.getProperty("TOPIC_ID_FILE"));
+		/*parseTopicId(properties.getProperty("TOPIC_ID_FILE"));
 
 		parsePaperTopicsFile(properties.getProperty("PAPER_TOPIC_KEYWORD_FILE"));
 
@@ -397,7 +416,7 @@ public class FileParser {
 				.getProperty("PAPER_TOPIC_DISTRIBUTION_FILE"));
 
 		parseCitationImportance(properties
-				.getProperty("CITATION_TOPIC_DISTRIBUTION_FILE"));
+				.getProperty("CITATION_TOPIC_DISTRIBUTION_FILE"));*/
 
 		parsePageRankImportance(properties
 				.getProperty("PAGE_RANK_IMPORTANCE_FOLDER"));
